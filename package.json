@@ -1,1 +1,12 @@
+{
+  "name": "site-monitor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "monitor": "node scripts/run.js"
+  },
+  "dependencies": {
+    "playwright": "^1.0.0"
+  }
+}
 
