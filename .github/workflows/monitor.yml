@@ -3,8 +3,7 @@ name: Site Monitor
 on:
   workflow_dispatch:
   schedule:
-    # 주기 제어: 여기 cron만 바꾸면 됨 (예: 30분마다 */30 * * * *)
-    - cron: "0 * * * *"   # 매시 정각
+    - cron: "0 * * * *" # 매시 정각(원하는대로 변경)
 
 permissions:
   contents: write
@@ -31,17 +30,31 @@ jobs:
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
-      - name: Run monitor
-        run: npm run monitor
+      # ✅ 여기서 실패해도 워크플로를 멈추지 않게 처리
+      - name: Run monitor (do not stop on failure)
+        id: monitor
+        run: |
+          set +e
+          npm run monitor
+          code=$?
+          echo "exit_code=$code" >> $GITHUB_OUTPUT
+          exit 0
 
-      - name: Commit reports (if changed)
+      # ✅ 항상 reports를 커밋/푸시
+      - name: Commit reports (always)
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain)" ]; then
-            git add reports
+            git add -A reports
             git commit -m "chore(reports): add run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push
           else
             echo "No changes to commit."
           fi
+
+      # (선택) Actions를 빨갛게 표시하고 싶으면 마지막에 실패 처리
+      - name: Fail workflow if monitor failed
+        if: ${{ steps.monitor.outputs.exit_code != '0' }}
+        run: exit 1
