@@ -1,1 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Site Monitor Dashboard</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">📸</div>
+      <div>
+        <div class="title">Site Monitor</div>
+        <div class="sub">GitHub Actions + Pages</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnRefresh" class="btn">새로고침</button>
+      <a class="btn ghost" id="repoLink" target="_blank" rel="noreferrer">리포지토리</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <div class="panelHeader">
+        <div class="h2">실행 이력</div>
+        <div id="latestBadge" class="badge">-</div>
+      </div>
+
+      <div class="filters">
+        <input id="q" class="input" placeholder="사이트명/URL 검색" />
+        <label class="chk">
+          <input type="checkbox" id="onlyFail" />
+          실패만 보기
+        </label>
+      </div>
+
+      <div id="runList" class="runList"></div>
+    </aside>
+
+    <section class="content">
+      <div id="hero" class="hero">
+        <div class="heroTitle" id="heroTitle">로딩 중…</div>
+        <div class="heroMeta" id="heroMeta"></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="cardTitle">요약</div>
+          <div class="summary" id="summary"></div>
+        </div>
+
+        <div class="card">
+          <div class="cardTitle">결과 상세</div>
+          <div id="items" class="items"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
 
