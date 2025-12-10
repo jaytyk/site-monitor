@@ -4,6 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Site Monitor Dashboard</title>
+
+  <script>
+    // /repo 로 접속하면 상대경로가 깨질 수 있어 /repo/ 로 강제
+    if (!location.pathname.endsWith('/') && !location.pathname.endsWith('.html')) {
+      location.replace(location.pathname + '/' + location.search + location.hash);
+    }
+  </script>
+
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -53,14 +61,14 @@
         </div>
 
         <div class="card">
-          <div class="cardTitle">결과 상세</div>
-          <div id="items" class="items"></div>
-        </div>
-      </div>
-    </section>
-  </main>
+          <div class="cardHeaderRow">
+            <div class="cardTitle">결과 상세</div>
+            <div class="hint">※ 썸네일 클릭 시 원본 PNG</div>
+          </div>
 
-  <script type="module" src="./app.js"></script>
-</body>
-</html>
-
+          <div class="tableWrap">
+            <table class="tbl" id="itemsTable">
+              <thead>
+                <tr>
+                  <th class="col-name">사이트명</th>
+                  <th class="col-url">URL</th
