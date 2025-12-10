@@ -1,0 +1,31 @@
+{
+  "id": "2025-12-10_04-14-29",
+  "overall": "OK",
+  "total": 2,
+  "failed": 0,
+  "startedAt": "2025-12-10T04:14:30.819Z",
+  "finishedAt": "2025-12-10T04:14:34.994Z",
+  "durationMs": 4175,
+  "items": [
+    {
+      "name": "Google",
+      "url": "https://www.google.com",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 1213,
+      "error": null,
+      "screenshot": "reports/2025-12-10_04-14-29/01_google.png",
+      "checkedAt": "2025-12-10T04:14:30.820Z"
+    },
+    {
+      "name": "GitHub",
+      "url": "https://github.com",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 4080,
+      "error": null,
+      "screenshot": "reports/2025-12-10_04-14-29/02_github.png",
+      "checkedAt": "2025-12-10T04:14:30.820Z"
+    }
+  ]
+}
