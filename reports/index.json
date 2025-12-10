@@ -1,1 +1,14 @@
-{ "runs": [] }
+{
+  "runs": [
+    {
+      "id": "2025-12-10_04-00-45",
+      "overall": "OK",
+      "total": 2,
+      "failed": 0,
+      "startedAt": "2025-12-10T04:00:46.585Z",
+      "finishedAt": "2025-12-10T04:00:50.378Z",
+      "durationMs": 3793,
+      "runJson": "reports/2025-12-10_04-00-45/run.json"
+    }
+  ]
+}
