@@ -3,7 +3,7 @@ name: Site Monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *" # 매시 정각(원하는대로 변경)
+    - cron: "0 9 * * 1" # 매시 정각(원하는대로 변경)
 
 permissions:
   contents: write
