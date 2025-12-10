@@ -44,10 +44,16 @@ jobs:
       - name: Commit reports (always)
         if: always()
         run: |
+          # Jekyll 비활성화(정적 파일/폴더 그대로 서빙)
+          touch .nojekyll
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # ✅ .gitignore에 걸려도 reports를 강제로 스테이징
+          git add -f -A reports .nojekyll
+
           if [ -n "$(git status --porcelain)" ]; then
-            git add -A reports
             git commit -m "chore(reports): add run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push
           else
