@@ -1,5 +1,8 @@
 const $ = (s) => document.querySelector(s);
 
+// 캐시 방지 + Pages 하위경로에서도 안전하게
+const BASE = location.href.endsWith('/') ? location.href : (location.href + '/');
+
 const state = {
   index: null,
   selectedRunId: null,
@@ -27,25 +30,25 @@ function setHashRun(id) {
 }
 
 function repoUrlGuess() {
-  // GitHub Pages 기본: https://<user>.github.io/<repo>/
-  // 여기선 자동 링크가 애매해서 현재 origin 기준으로 repo 링크를 비워둠
   return "https://github.com/";
 }
 
-async function fetchJson(url) {
-  const r = await fetch(url, { cache: "no-store" });
-  if (!r.ok) throw new Error(`Failed to fetch ${url} (${r.status})`);
+async function fetchJson(relUrl) {
+  const u = new URL(relUrl, BASE);
+  u.searchParams.set('v', Date.now().toString()); // 캐시 방지
+  const r = await fetch(u.toString(), { cache: "no-store" });
+  if (!r.ok) throw new Error(`Failed to fetch ${u} (${r.status})`);
   return r.json();
 }
 
 async function loadIndex() {
-  state.index = await fetchJson("./reports/index.json");
+  state.index = await fetchJson("reports/index.json");
   if (!state.index?.runs) state.index = { runs: [] };
 }
 
 async function loadRun(runJsonPath) {
   if (state.runCache.has(runJsonPath)) return state.runCache.get(runJsonPath);
-  const data = await fetchJson("./" + runJsonPath);
+  const data = await fetchJson(runJsonPath);
   state.runCache.set(runJsonPath, data);
   return data;
 }
@@ -113,21 +116,22 @@ function renderHero(run) {
 
   if (run.overall === "FAIL") {
     heroTitle.textContent = `⚠️ 실패 발생: ${run.failed}개 사이트`;
-    heroMeta.textContent = `최근 실행(${run.id})에서 일부 사이트 로딩/캡처에 실패했습니다. 아래에서 사이트별 오류/스크린샷을 확인하세요.`;
+    heroMeta.textContent = `최근 실행(${run.id})에서 일부 사이트 로딩/캡처에 실패했습니다. 아래 표에서 사이트별 결과와 캡처를 확인하세요.`;
   } else {
     heroTitle.textContent = `✅ 이상없음: 전체 ${run.total}개 성공`;
     heroMeta.textContent = `최근 실행(${run.id})에서 모든 사이트가 정상 로딩/캡처되었습니다.`;
   }
 }
 
-function renderItems(run) {
-  const items = $("#items");
-  items.innerHTML = "";
+function renderItemsTable(run) {
+  const body = $("#itemsBody");
+  const empty = $("#emptyMsg");
+  body.innerHTML = "";
 
   const q = ($("#q").value || "").toLowerCase().trim();
   const onlyFail = $("#onlyFail").checked;
 
-  const filtered = (run.items || []).filter((it) => {
+  const items = (run.items || []).filter((it) => {
     if (onlyFail && it.status !== "FAIL") return false;
     if (!q) return true;
     return (
@@ -136,30 +140,50 @@ function renderItems(run) {
     );
   });
 
-  for (const it of filtered) {
-    const wrap = document.createElement("div");
-    wrap.className = "item";
+  if (!items.length) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
 
-    const smallClass = it.status === "OK" ? "small ok" : "small fail";
-    const http = it.httpStatus ? `HTTP ${it.httpStatus}` : "HTTP -";
-    const dur = it.durationMs != null ? `${Math.round(it.durationMs / 1000)}s` : "-";
+  for (const it of items) {
+    const tr = document.createElement("tr");
+    if (it.status === "FAIL") tr.classList.add("failRow");
 
-    wrap.innerHTML = `
-      <a href="./${it.screenshot}" target="_blank" rel="noreferrer">
-        <img class="thumb" src="./${it.screenshot}" alt="screenshot" loading="lazy" />
-      </a>
-      <div>
-        <div class="itemTitle">${it.name}</div>
-        <div class="itemUrl">${it.url}</div>
-        <div class="itemBadges">
-          <span class="${smallClass}">${it.status}</span>
-          <span class="small">${http}</span>
-          <span class="small">⏱ ${dur}</span>
-        </div>
-        ${it.error ? `<div class="err">에러: ${it.error}</div>` : ""}
-      </div>
+    const isOk = it.status === "OK";
+    const chipClass = isOk ? "chip ok" : "chip fail";
+    const chipText = isOk ? "성공" : "실패";
+
+    const sub = [];
+    if (it.httpStatus) sub.push(`HTTP ${it.httpStatus}`);
+    if (typeof it.durationMs === "number") sub.push(`⏱ ${Math.round(it.durationMs / 1000)}s`);
+    const subText = sub.length ? sub.join(" · ") : "";
+
+    const errText = !isOk && it.error ? it.error : "";
+
+    tr.innerHTML = `
+      <td>
+        <div style="font-weight:900;">${it.name || "-"}</div>
+      </td>
+
+      <td>
+        <a class="url" href="${it.url}" target="_blank" rel="noreferrer">${it.url || "-"}</a>
+      </td>
+
+      <td>
+        <span class="${chipClass}">${chipText}</span>
+        ${subText ? `<div class="subinfo">${subText}</div>` : ""}
+        ${errText ? `<div class="subinfo" title="${errText.replaceAll('"','&quot;')}">에러: ${errText}</div>` : ""}
+      </td>
+
+      <td>
+        <a href="${it.screenshot}" target="_blank" rel="noreferrer" title="원본 보기">
+          <img class="thumb" src="${it.screenshot}" alt="screenshot" loading="lazy" />
+        </a>
+      </td>
     `;
-    items.appendChild(wrap);
+
+    body.appendChild(tr);
   }
 }
 
@@ -169,7 +193,8 @@ async function renderSelectedRun() {
     $("#heroTitle").textContent = "실행 이력이 없습니다.";
     $("#heroMeta").textContent = "GitHub Actions를 한 번 실행(수동 실행 또는 스케줄)해 주세요.";
     $("#summary").innerHTML = "";
-    $("#items").innerHTML = "";
+    $("#itemsBody").innerHTML = "";
+    $("#emptyMsg").style.display = "block";
     return;
   }
 
@@ -182,7 +207,7 @@ async function renderSelectedRun() {
   renderRunList();
   renderHero(run);
   renderSummary(run);
-  renderItems(run);
+  renderItemsTable(run);
 }
 
 async function refreshAll() {
@@ -204,4 +229,3 @@ function wire() {
   wire();
   await refreshAll();
 })();
-
