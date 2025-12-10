@@ -1,0 +1,47 @@
+name: Site Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 주기 제어: 여기 cron만 바꾸면 됨 (예: 30분마다 */30 * * * *)
+    - cron: "0 * * * *"   # 매시 정각
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run monitor
+        run: npm run monitor
+
+      - name: Commit reports (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add reports
+            git commit -m "chore(reports): add run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          else
+            echo "No changes to commit."
+          fi
