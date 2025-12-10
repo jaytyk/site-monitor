@@ -12,7 +12,7 @@
     }
   </script>
 
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=2" />
 </head>
 <body>
   <header class="topbar">
@@ -71,4 +71,26 @@
               <thead>
                 <tr>
                   <th class="col-name">사이트명</th>
-                  <th class="col-url">URL</th
+                  <th class="col-url">URL</th>
+                  <th class="col-status">결과</th>
+                  <th class="col-shot">이미지</th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody">
+                <!-- JS 렌더 -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty" id="emptyMsg" style="display:none;">
+            표시할 데이터가 없습니다.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ✅ 여기 app.js에도 v=2 붙여서 캐시를 확실히 끊습니다 -->
+  <script type="module" src="./app.js?v=2"></script>
+</body>
+</html>
