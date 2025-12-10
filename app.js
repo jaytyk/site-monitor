@@ -1,7 +1,7 @@
 const $ = (s) => document.querySelector(s);
 
-// 캐시 방지 + Pages 하위경로에서도 안전하게
-const BASE = location.href.endsWith('/') ? location.href : (location.href + '/');
+// ✅ hash/query 포함된 href 대신 "디렉토리 기준" base를 안전하게 계산
+const BASE = new URL("./", window.location.href).toString();
 
 const state = {
   index: null,
@@ -35,9 +35,10 @@ function repoUrlGuess() {
 
 async function fetchJson(relUrl) {
   const u = new URL(relUrl, BASE);
-  u.searchParams.set('v', Date.now().toString()); // 캐시 방지
+  // ✅ Pages 캐시 꼬임 방지
+  u.searchParams.set("v", Date.now().toString());
   const r = await fetch(u.toString(), { cache: "no-store" });
-  if (!r.ok) throw new Error(`Failed to fetch ${u} (${r.status})`);
+  if (!r.ok) throw new Error(`Fetch failed: ${u} (${r.status})`);
   return r.json();
 }
 
@@ -63,19 +64,12 @@ function renderRunList() {
   const runs = state.index.runs.filter((r) => {
     if (onlyFail && r.overall !== "FAIL") return false;
     if (!q) return true;
-    return (
-      r.id.toLowerCase().includes(q) ||
-      (r.overall || "").toLowerCase().includes(q)
-    );
+    return r.id.toLowerCase().includes(q) || (r.overall || "").toLowerCase().includes(q);
   });
 
   const latest = state.index.runs[0];
   const latestBadge = $("#latestBadge");
-  if (!latest) {
-    latestBadge.textContent = "실행 이력 없음";
-  } else {
-    latestBadge.textContent = latest.overall === "FAIL" ? "⚠️ 실패 있음" : "✅ 이상없음";
-  }
+  latestBadge.textContent = !latest ? "실행 이력 없음" : (latest.overall === "FAIL" ? "⚠️ 실패 있음" : "✅ 이상없음");
 
   for (const r of runs) {
     const el = document.createElement("div");
@@ -116,7 +110,7 @@ function renderHero(run) {
 
   if (run.overall === "FAIL") {
     heroTitle.textContent = `⚠️ 실패 발생: ${run.failed}개 사이트`;
-    heroMeta.textContent = `최근 실행(${run.id})에서 일부 사이트 로딩/캡처에 실패했습니다. 아래 표에서 사이트별 결과와 캡처를 확인하세요.`;
+    heroMeta.textContent = `최근 실행(${run.id})에서 일부 사이트 로딩/캡처에 실패했습니다. 아래 표에서 확인하세요.`;
   } else {
     heroTitle.textContent = `✅ 이상없음: 전체 ${run.total}개 성공`;
     heroMeta.textContent = `최근 실행(${run.id})에서 모든 사이트가 정상 로딩/캡처되었습니다.`;
@@ -134,10 +128,7 @@ function renderItemsTable(run) {
   const items = (run.items || []).filter((it) => {
     if (onlyFail && it.status !== "FAIL") return false;
     if (!q) return true;
-    return (
-      (it.name || "").toLowerCase().includes(q) ||
-      (it.url || "").toLowerCase().includes(q)
-    );
+    return (it.name || "").toLowerCase().includes(q) || (it.url || "").toLowerCase().includes(q);
   });
 
   if (!items.length) {
@@ -158,33 +149,35 @@ function renderItemsTable(run) {
     if (it.httpStatus) sub.push(`HTTP ${it.httpStatus}`);
     if (typeof it.durationMs === "number") sub.push(`⏱ ${Math.round(it.durationMs / 1000)}s`);
     const subText = sub.length ? sub.join(" · ") : "";
-
     const errText = !isOk && it.error ? it.error : "";
 
     tr.innerHTML = `
-      <td>
-        <div style="font-weight:900;">${it.name || "-"}</div>
-      </td>
-
-      <td>
-        <a class="url" href="${it.url}" target="_blank" rel="noreferrer">${it.url || "-"}</a>
-      </td>
-
+      <td><div style="font-weight:900;">${it.name || "-"}</div></td>
+      <td><a class="url" href="${it.url}" target="_blank" rel="noreferrer">${it.url || "-"}</a></td>
       <td>
         <span class="${chipClass}">${chipText}</span>
         ${subText ? `<div class="subinfo">${subText}</div>` : ""}
-        ${errText ? `<div class="subinfo" title="${errText.replaceAll('"','&quot;')}">에러: ${errText}</div>` : ""}
+        ${errText ? `<div class="subinfo">에러: ${errText}</div>` : ""}
       </td>
-
       <td>
         <a href="${it.screenshot}" target="_blank" rel="noreferrer" title="원본 보기">
           <img class="thumb" src="${it.screenshot}" alt="screenshot" loading="lazy" />
         </a>
       </td>
     `;
-
     body.appendChild(tr);
   }
+}
+
+function showFatal(err) {
+  $("#heroTitle").textContent = "⚠️ 데이터 로딩 실패";
+  $("#heroMeta").textContent =
+    `${String(err)}\n` +
+    `- reports/index.json이 Pages에서 열리는지 확인: /reports/index.json\n` +
+    `- 또는 app.js 캐시 문제면 index.html의 ?v= 숫자를 올려주세요.`;
+  $("#summary").innerHTML = "";
+  $("#itemsBody").innerHTML = "";
+  $("#emptyMsg").style.display = "block";
 }
 
 async function renderSelectedRun() {
@@ -217,15 +210,19 @@ async function refreshAll() {
 }
 
 function wire() {
-  $("#btnRefresh").onclick = () => refreshAll();
-  $("#q").addEventListener("input", () => renderSelectedRun());
-  $("#onlyFail").addEventListener("change", () => renderSelectedRun());
-  window.addEventListener("hashchange", () => renderSelectedRun());
+  $("#btnRefresh").onclick = () => refreshAll().catch(showFatal);
+  $("#q").addEventListener("input", () => renderSelectedRun().catch(showFatal));
+  $("#onlyFail").addEventListener("change", () => renderSelectedRun().catch(showFatal));
+  window.addEventListener("hashchange", () => renderSelectedRun().catch(showFatal));
 
   $("#repoLink").href = repoUrlGuess();
 }
 
 (async function init() {
-  wire();
-  await refreshAll();
+  try {
+    wire();
+    await refreshAll();
+  } catch (e) {
+    showFatal(e);
+  }
 })();
