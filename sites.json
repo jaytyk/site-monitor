@@ -7,16 +7,69 @@
   },
   "sites": [
     {
-      "name": "Google",
-      "url": "https://www.google.com",
+      "name": "NYPC",
+      "url": "https://www.nypc.co.kr",
       "waitUntil": "networkidle"
     },
     {
-      "name": "GitHub",
-      "url": "https://github.com",
-      "waitUntil": "networkidle",
-      "readySelector": "body"
+      "name": "NDC",
+      "url": "https://ndc.nexon.com",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon IP",
+      "url": "https://ip.nexon.com",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Space",
+      "url": "https://nexonspace.co.kr",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Computer Museum",
+      "url": "https://computermuseum.nexon.com",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Hero",
+      "url": "https://www.nexonfoundation.org/nexonhero",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Dotori Sopoong",
+      "url": "https://www.dotorisopoong.com",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Company",
+      "url": "https://company.nexon.com/ko/",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Blog",
+      "url": "https://blog.nexon.com/",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Networks",
+      "url": "https://nexon-networks.com/",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Pressroom",
+      "url": "https://pressroom.nexon.com/",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Brand",
+      "url": "https://brand.nexon.com/",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "Nexon Foundation",
+      "url": "https://www.nexonfoundation.org/",
+      "waitUntil": "networkidle"
     }
   ]
 }
-
