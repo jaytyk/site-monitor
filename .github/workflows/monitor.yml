@@ -63,11 +63,17 @@ jobs:
           fi
 
       # ✅ Slack 알림 (요약 + 대시보드 링크)
-      - name: Notify Slack (summary + dashboard link)
-        if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+       - name: Notify Slack (summary + dashboard link)
+        if: always()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          # ✅ Secret이 없으면 조용히 스킵(워크플로 실패 안 함)
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not set. Skipping Slack notification."
+            exit 0
+          fi
+
           node - <<'NODE'
           const fs = require('fs');
 
