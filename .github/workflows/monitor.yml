@@ -8,7 +8,8 @@ on:
   schedule:
     # - cron: "0 * * * *"   # 매시간 정각(UTC)
     # - cron: "*/10 * * * *"  # 10분마다
-    - cron: "0 9 * * 1"     # 매주 월요일 09:00(UTC) = KST 18:00
+    # - cron: "0 9 * * 1"     # 매주 월요일 09:00(UTC) = KST 18:00
+    - cron: "0 9 1 * *"     # 매월 1일 09:00(UTC) = KST 18:00, 월 1회 실행
 
 # ✅ GITHUB_TOKEN으로 reports/ 커밋/푸시해야 하므로 write 필요
 permissions:
