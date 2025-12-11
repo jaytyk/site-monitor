@@ -39,8 +39,28 @@ a{color:inherit; text-decoration:none}
   background: rgba(11,15,25,.75);
 }
 
-.brand{display:flex; gap:12px; align-items:center}
-.logo{font-size:22px}
+.brand{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+/* ✅ 로고 컨테이너 & 이미지 (넥슨 로고용) */
+.logo{
+  width:120px;
+  height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  padding:0;
+}
+.logo-img{
+  max-height:32px;  /* 필요하면 40~48px 정도로 조절 */
+  width:auto;
+  display:block;
+}
+
 .title{font-weight:900; letter-spacing:.2px}
 .sub{color:var(--muted); font-size:12px; margin-top:2px}
 
