@@ -12,12 +12,16 @@
     }
   </script>
 
-  <link rel="stylesheet" href="./styles.css?v=2" />
+  <!-- ✅ CSS 버전 올려서 캐시 한 번 더 끊기 -->
+  <link rel="stylesheet" href="./styles.css?v=3" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <div class="logo">📸</div>
+      <!-- ✅ 넥슨 로고 이미지로 교체 -->
+      <div class="logo">
+        <img src="./assets/nexon-logo.png" alt="NEXON" class="logo-img" />
+      </div>
       <div>
         <div class="title">Site Monitor</div>
         <div class="sub">GitHub Actions + Pages</div>
@@ -90,7 +94,7 @@
     </section>
   </main>
 
-  <!-- ✅ 여기 app.js에도 v=2 붙여서 캐시를 확실히 끊습니다 -->
-  <script type="module" src="./app.js?v=2"></script>
+  <!-- ✅ app.js 버전도 올려서 캐시 갱신 -->
+  <script type="module" src="./app.js?v=3"></script>
 </body>
 </html>
