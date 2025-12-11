@@ -1,0 +1,141 @@
+{
+  "id": "2025-12-11_03-55-09",
+  "overall": "FAIL",
+  "total": 13,
+  "failed": 1,
+  "startedAt": "2025-12-11T03:55:11.023Z",
+  "finishedAt": "2025-12-11T03:56:02.219Z",
+  "durationMs": 51196,
+  "items": [
+    {
+      "name": "NYPC",
+      "url": "https://www.nypc.co.kr",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 5214,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/01_nypc.png",
+      "checkedAt": "2025-12-11T03:55:11.024Z"
+    },
+    {
+      "name": "NDC",
+      "url": "https://ndc.nexon.com",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 1739,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/02_ndc.png",
+      "checkedAt": "2025-12-11T03:55:11.024Z"
+    },
+    {
+      "name": "Nexon IP",
+      "url": "https://ip.nexon.com",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 3540,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/03_nexon-ip.png",
+      "checkedAt": "2025-12-11T03:55:11.024Z"
+    },
+    {
+      "name": "Nexon Space",
+      "url": "https://nexonspace.co.kr",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 2032,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/04_nexon-space.png",
+      "checkedAt": "2025-12-11T03:55:12.827Z"
+    },
+    {
+      "name": "Nexon Computer Museum",
+      "url": "https://computermuseum.nexon.com",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 3130,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/05_nexon-computer-museum.png",
+      "checkedAt": "2025-12-11T03:55:14.634Z"
+    },
+    {
+      "name": "Nexon Hero",
+      "url": "https://www.nexonfoundation.org/nexonhero",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 5322,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/06_nexon-hero.png",
+      "checkedAt": "2025-12-11T03:55:14.893Z"
+    },
+    {
+      "name": "Dotori Sopoong",
+      "url": "https://www.dotorisopoong.com",
+      "status": "FAIL",
+      "httpStatus": null,
+      "durationMs": 45819,
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n  - navigating to \"https://www.dotorisopoong.com/\", waiting until \"networkidle\"\n",
+      "screenshot": "reports/2025-12-11_03-55-09/07_dotori-sopoong.png",
+      "checkedAt": "2025-12-11T03:55:16.294Z"
+    },
+    {
+      "name": "Nexon Company",
+      "url": "https://company.nexon.com/ko/",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 3293,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/08_nexon-company.png",
+      "checkedAt": "2025-12-11T03:55:17.794Z"
+    },
+    {
+      "name": "Nexon Blog",
+      "url": "https://blog.nexon.com/",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 4877,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/09_nexon-blog.png",
+      "checkedAt": "2025-12-11T03:55:20.256Z"
+    },
+    {
+      "name": "Nexon Networks",
+      "url": "https://nexon-networks.com/",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 5326,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/10_nexon-networks.png",
+      "checkedAt": "2025-12-11T03:55:21.113Z"
+    },
+    {
+      "name": "Nexon Pressroom",
+      "url": "https://pressroom.nexon.com/",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 6656,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/11_nexon-pressroom.png",
+      "checkedAt": "2025-12-11T03:55:25.209Z"
+    },
+    {
+      "name": "Nexon Brand",
+      "url": "https://brand.nexon.com/",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 5367,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/12_nexon-brand.png",
+      "checkedAt": "2025-12-11T03:55:26.476Z"
+    },
+    {
+      "name": "Nexon Foundation",
+      "url": "https://www.nexonfoundation.org/",
+      "status": "OK",
+      "httpStatus": 200,
+      "durationMs": 2608,
+      "error": null,
+      "screenshot": "reports/2025-12-11_03-55-09/13_nexon-foundation.png",
+      "checkedAt": "2025-12-11T03:55:31.919Z"
+    }
+  ]
+}
