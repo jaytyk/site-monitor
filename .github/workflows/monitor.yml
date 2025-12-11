@@ -6,9 +6,9 @@ on:
 
   # ✅ 정기 실행 스케줄 (GitHub Actions cron은 UTC 기준)
   schedule:
-    - cron: "0 * * * *"   # 매시간 정각(UTC)
+    # - cron: "0 * * * *"   # 매시간 정각(UTC)
     # - cron: "*/10 * * * *"  # 10분마다
-    # - cron: "0 9 * * 1"     # 매주 월요일 09:00(UTC) = KST 18:00
+    - cron: "0 9 * * 1"     # 매주 월요일 09:00(UTC) = KST 18:00
 
 # ✅ GITHUB_TOKEN으로 reports/ 커밋/푸시해야 하므로 write 필요
 permissions:
