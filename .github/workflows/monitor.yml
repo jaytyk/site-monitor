@@ -3,7 +3,7 @@ name: Site Monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * 1" # 매시 정각(원하는대로 변경)
+    - cron: "0 9 * * 1" # 매주 월요일 09:00 (KST 아님: GitHub Actions cron은 UTC 기준)
 
 permissions:
   contents: write
@@ -59,6 +59,58 @@ jobs:
           else
             echo "No changes to commit."
           fi
+
+      # ✅ Slack 알림 (요약 + 대시보드 링크)
+      - name: Notify Slack (summary + dashboard link)
+        if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+
+          const idx = JSON.parse(fs.readFileSync('reports/index.json','utf8'));
+          const runRef = idx.runs[0];
+          const run = JSON.parse(fs.readFileSync(runRef.runJson,'utf8'));
+
+          const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
+          const pagesBase = `https://${owner}.github.io/${repo}/`;
+          const dash = `${pagesBase}#run=${encodeURIComponent(run.id)}`;
+
+          const ok = run.overall === 'OK';
+          const failedItems = (run.items || []).filter(x => x.status !== 'OK');
+          const topFails = failedItems.slice(0, 10)
+            .map(x => `• ${x.name} (${x.url})`)
+            .join('\n') || '없음';
+
+          const header = ok ? '✅ Site Monitor 결과 (이상없음)' : '⚠️ Site Monitor 결과 (실패 있음)';
+          const statusLine = ok ? `전체 ${run.total}개 OK` : `${failedItems.length}/${run.total} FAIL`;
+
+          const payload = {
+            text: `${header} - ${statusLine}\n${dash}`,
+            blocks: [
+              { type:'header', text:{ type:'plain_text', text: header } },
+              { type:'section', fields:[
+                { type:'mrkdwn', text:`*Run ID:*\n${run.id}` },
+                { type:'mrkdwn', text:`*Status:*\n${run.overall} (${run.failed}/${run.total})` },
+                { type:'mrkdwn', text:`*Started:*\n${run.startedAt}` },
+                { type:'mrkdwn', text:`*Duration:*\n${Math.round((run.durationMs||0)/1000)}s` }
+              ]},
+              { type:'section', text:{ type:'mrkdwn', text:`*Dashboard:*\n${dash}` } }
+            ]
+          };
+
+          if (!ok) {
+            payload.blocks.push({
+              type:'section',
+              text:{ type:'mrkdwn', text:`*실패 목록(최대 10개):*\n${topFails}` }
+            });
+          }
+
+          fs.writeFileSync('slack_payload.json', JSON.stringify(payload));
+          NODE
+
+          curl -X POST -H 'Content-type: application/json' --data @slack_payload.json "$SLACK_WEBHOOK_URL"
 
       # (선택) Actions를 빨갛게 표시하고 싶으면 마지막에 실패 처리
       - name: Fail workflow if monitor failed
