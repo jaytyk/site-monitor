@@ -45,19 +45,21 @@ a{color:inherit; text-decoration:none}
   align-items:center;
 }
 
-/* ✅ 로고 컨테이너 & 이미지 (넥슨 로고용) */
+/* ✅ 로고 컨테이너 & 이미지 (넥슨 로고용, 작게 고정) */
 .logo{
-  width:120px;
-  height:48px;
+  width:96px;            /* 로고 전체 가로폭 */
+  height:32px;           /* 로고 전체 세로높이 */
   display:flex;
   align-items:center;
   justify-content:center;
   background:transparent;
   padding:0;
+  overflow:hidden;       /* 박스 밖으로 튀어나온 부분은 잘라냄 */
 }
 .logo-img{
-  max-height:32px;  /* 필요하면 40~48px 정도로 조절 */
-  width:auto;
+  width:100%;
+  height:100%;
+  object-fit:contain;    /* 비율 유지하면서 박스 안에 맞추기 */
   display:block;
 }
 
