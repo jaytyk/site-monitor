@@ -1,3 +1,6 @@
+const LOCALE = "ko-KR";
+const TIMEZONE = "Asia/Seoul"; // 항상 KST(+09:00)로 표시
+
 const $ = (s) => document.querySelector(s);
 
 // ✅ hash/query 포함된 href 대신 "디렉토리 기준" base를 안전하게 계산
@@ -9,14 +12,17 @@ const state = {
   runCache: new Map()
 };
 
+// 날짜/시간을 항상 KST 기준으로 포맷
 function fmt(iso) {
   try {
-    return new Intl.DateTimeFormat("ko-KR", {
+    if (!iso) return "-";
+    return new Intl.DateTimeFormat(LOCALE, {
       dateStyle: "medium",
-      timeStyle: "medium"
+      timeStyle: "medium",
+      timeZone: TIMEZONE, // ✅ Asia/Seoul 고정
     }).format(new Date(iso));
   } catch {
-    return iso;
+    return iso || "-";
   }
 }
 
@@ -69,7 +75,9 @@ function renderRunList() {
 
   const latest = state.index.runs[0];
   const latestBadge = $("#latestBadge");
-  latestBadge.textContent = !latest ? "실행 이력 없음" : (latest.overall === "FAIL" ? "⚠️ 실패 있음" : "✅ 이상없음");
+  latestBadge.textContent = !latest
+    ? "실행 이력 없음"
+    : (latest.overall === "FAIL" ? "⚠️ 실패 있음" : "✅ 이상없음");
 
   for (const r of runs) {
     const el = document.createElement("div");
@@ -77,7 +85,9 @@ function renderRunList() {
     el.onclick = () => setHashRun(r.id);
 
     const pillClass = r.overall === "FAIL" ? "pill fail" : "pill ok";
-    const pillText = r.overall === "FAIL" ? `FAIL (${r.failed}/${r.total})` : `OK (${r.total})`;
+    const pillText = r.overall === "FAIL"
+      ? `FAIL (${r.failed}/${r.total})`
+      : `OK (${r.total})`;
 
     el.innerHTML = `
       <div class="runTop">
@@ -110,10 +120,12 @@ function renderHero(run) {
 
   if (run.overall === "FAIL") {
     heroTitle.textContent = `⚠️ 실패 발생: ${run.failed}개 사이트`;
-    heroMeta.textContent = `최근 실행(${run.id})에서 일부 사이트 로딩/캡처에 실패했습니다. 아래 표에서 확인하세요.`;
+    heroMeta.textContent =
+      `최근 실행(${run.id})에서 일부 사이트 로딩/캡처에 실패했습니다. 아래 표에서 확인하세요.`;
   } else {
     heroTitle.textContent = `✅ 이상없음: 전체 ${run.total}개 성공`;
-    heroMeta.textContent = `최근 실행(${run.id})에서 모든 사이트가 정상 로딩/캡처되었습니다.`;
+    heroMeta.textContent =
+      `최근 실행(${run.id})에서 모든 사이트가 정상 로딩/캡처되었습니다.`;
   }
 }
 
@@ -128,7 +140,8 @@ function renderItemsTable(run) {
   const items = (run.items || []).filter((it) => {
     if (onlyFail && it.status !== "FAIL") return false;
     if (!q) return true;
-    return (it.name || "").toLowerCase().includes(q) || (it.url || "").toLowerCase().includes(q);
+    return (it.name || "").toLowerCase().includes(q) ||
+           (it.url || "").toLowerCase().includes(q);
   });
 
   if (!items.length) {
@@ -184,7 +197,8 @@ async function renderSelectedRun() {
   const runs = state.index.runs;
   if (!runs.length) {
     $("#heroTitle").textContent = "실행 이력이 없습니다.";
-    $("#heroMeta").textContent = "GitHub Actions를 한 번 실행(수동 실행 또는 스케줄)해 주세요.";
+    $("#heroMeta").textContent =
+      "GitHub Actions를 한 번 실행(수동 실행 또는 스케줄)해 주세요.";
     $("#summary").innerHTML = "";
     $("#itemsBody").innerHTML = "";
     $("#emptyMsg").style.display = "block";
