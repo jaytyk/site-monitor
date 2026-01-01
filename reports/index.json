@@ -1,6 +1,16 @@
 {
   "runs": [
     {
+      "id": "2026-01-01_09-14-46",
+      "overall": "FAIL",
+      "total": 13,
+      "failed": 1,
+      "startedAt": "2026-01-01T09:14:46.547Z",
+      "finishedAt": "2026-01-01T09:15:38.391Z",
+      "durationMs": 51844,
+      "runJson": "reports/2026-01-01_09-14-46/run.json"
+    },
+    {
       "id": "2025-12-11_03-55-09",
       "overall": "FAIL",
       "total": 13,
