@@ -73,7 +73,7 @@ async function main() {
 
   const settings = cfg.settings ?? {};
   const concurrency = settings.concurrency ?? 3;
-  const timeoutMs = settings.timeoutMs ?? 45000;
+  const timeoutMs = settings.timeoutMs ?? 100000;
   const retentionRuns = settings.retentionRuns ?? 200;
   const viewport = settings.viewport ?? { width: 1366, height: 768 };
 
