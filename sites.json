@@ -37,13 +37,6 @@
       "waitUntil": "networkidle"
     },
     {
-      "name": "Dotori Sopoong",
-      "url": "https://www.dotorisopoong.com",
-      "waitUntil": "networkidle",
-      "timeoutMs": 60000,
-      "readySelector": "body"
-    },
-    {
       "name": "Nexon Company",
       "url": "https://company.nexon.com/ko/",
       "waitUntil": "networkidle"
