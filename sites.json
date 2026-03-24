@@ -22,6 +22,16 @@
       "waitUntil": "networkidle"
     },
     {
+      "name": "Nexon HQ",
+      "url": "https://www.nexon-hq.com/",
+      "waitUntil": "networkidle"
+    },
+    {
+      "name": "select all",
+      "url": "https://www.selectall.global/ko/about",
+      "waitUntil": "networkidle"
+    },
+    {
       "name": "Nexon Space",
       "url": "https://nexonspace.co.kr",
       "waitUntil": "networkidle"
