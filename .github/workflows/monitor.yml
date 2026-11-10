@@ -1,0 +1,145 @@
+name: Site Monitor
+
+on:
+  # ✅ GitHub Actions 화면에서 "Run workflow"로 즉시 1회 실행 가능
+  workflow_dispatch:
+
+  # ✅ 정기 실행 스케줄 (GitHub Actions cron은 UTC 기준)
+  schedule:
+    # - cron: "0 * * * *"   # 매시간 정각(UTC)
+    # - cron: "*/10 * * * *"  # 10분마다
+    # - cron: "0 9 * * 1"     # 매주 월요일 09:00(UTC) = KST 18:00
+    - cron: "0 9 1 * *"     # 매월 1일 09:00(UTC) = KST 18:00, 월 1회 실행
+
+# ✅ GITHUB_TOKEN으로 reports/ 커밋/푸시해야 하므로 write 필요
+permissions:
+  contents: write
+
+# ✅ 동시에 여러 실행이 겹치지 않게 그룹으로 묶음(중복 실행 방지)
+concurrency:
+  group: site-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) 소스 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) Node 설치
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 3) 의존성 설치 (package.json 기반)
+      - name: Install deps
+        run: npm install
+
+      # 4) Playwright 브라우저 설치(Chromium) + 런너에 필요한 deps 설치
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      # 5) 모니터 실행
+      #    - 실패(exit code != 0)하더라도 워크플로를 바로 중단하지 않고
+      #      exit_code 값을 outputs로 남긴 뒤 계속 진행(커밋/알림 위해)
+      - name: Run monitor (do not stop on failure)
+        id: monitor
+        run: |
+          set +e
+          npm run monitor
+          code=$?
+          echo "exit_code=$code" >> $GITHUB_OUTPUT
+          exit 0
+
+      # 6) 결과(reports/)를 리포에 커밋/푸시 (항상 실행)
+      - name: Commit reports (always)
+        if: always()
+        run: |
+          # Jekyll 비활성화(정적 파일/폴더 그대로 서빙)
+          touch .nojekyll
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # ✅ .gitignore에 걸려도 reports/를 강제로 스테이징
+          git add -f -A reports .nojekyll
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "chore(reports): add run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+
+      # 7) Slack 알림 (요약 + 대시보드 링크)
+      #    - Slack Webhook은 절대 파일에 하드코딩하지 말고
+      #      GitHub Secret(SLACK_WEBHOOK_URL)로만 넣어야 안전합니다.
+      #    - Secret이 없으면 조용히 스킵(워크플로 실패 안 함)
+      - name: Notify Slack (summary + dashboard link)
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not set. Skipping Slack notification."
+            exit 0
+          fi
+
+          node - <<'NODE'
+          const fs = require('fs');
+
+          // 최신 실행(run) 가져오기
+          const idx = JSON.parse(fs.readFileSync('reports/index.json','utf8'));
+          const runRef = idx.runs[0];
+          const run = JSON.parse(fs.readFileSync(runRef.runJson,'utf8'));
+
+          // Pages 대시보드 링크 자동 생성: https://{owner}.github.io/{repo}/#run=...
+          const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
+          const pagesBase = `https://${owner}.github.io/${repo}/`;
+          const dash = `${pagesBase}#run=${encodeURIComponent(run.id)}`;
+
+          const ok = run.overall === 'OK';
+          const failedItems = (run.items || []).filter(x => x.status !== 'OK');
+          const topFails = failedItems.slice(0, 10)
+            .map(x => `• ${x.name} (${x.url})`)
+            .join('\n') || '없음';
+
+          const header = ok ? '✅ Site Monitor 결과 (이상없음)' : '⚠️ Site Monitor 결과 (실패 있음)';
+          const statusLine = ok ? `전체 ${run.total}개 OK` : `${failedItems.length}/${run.total} FAIL`;
+
+          // Slack Block Kit payload
+          const payload = {
+            text: `${header} - ${statusLine}\n${dash}`,
+            blocks: [
+              { type:'header', text:{ type:'plain_text', text: header } },
+              { type:'section', fields:[
+                { type:'mrkdwn', text:`*Run ID:*\n${run.id}` },
+                { type:'mrkdwn', text:`*Status:*\n${run.overall} (${run.failed}/${run.total})` },
+                { type:'mrkdwn', text:`*Started:*\n${run.startedAt}` },
+                { type:'mrkdwn', text:`*Duration:*\n${Math.round((run.durationMs||0)/1000)}s` }
+              ]},
+              { type:'section', text:{ type:'mrkdwn', text:`*Dashboard:*\n${dash}` } }
+            ]
+          };
+
+          // 실패가 있으면 실패 목록(최대 10개) 추가
+          if (!ok) {
+            payload.blocks.push({
+              type:'section',
+              text:{ type:'mrkdwn', text:`*실패 목록(최대 10개):*\n${topFails}` }
+            });
+          }
+
+          fs.writeFileSync('slack_payload.json', JSON.stringify(payload));
+          NODE
+
+          curl -X POST -H 'Content-type: application/json' --data @slack_payload.json "$SLACK_WEBHOOK_URL"
+
+      # 8) (선택) 모니터가 실패한 경우 Actions를 빨갛게(실패) 표시
+      #    - 실패해도 "커밋/슬랙 알림"은 이미 실행되도록 위에서 처리함
+      - name: Fail workflow if monitor failed
+        if: ${{ steps.monitor.outputs.exit_code != '0' }}
+        run: exit 1
