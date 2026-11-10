@@ -1,0 +1,6 @@
+{
+  "name": "Site Monitor Dashboard & Manager",
+  "description": "Nexon 및 주요 웹사이트 모니터링 시스템 관리, 실시간 상태 점검 및 실행 이력 대시보드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
