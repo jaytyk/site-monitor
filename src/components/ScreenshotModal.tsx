@@ -128,6 +128,12 @@ export const ScreenshotModal: React.FC<Props> = ({ item, onClose, basePrefix = '
               alt={item.name} 
               style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
               className="rounded-lg shadow-2xl transition-transform duration-150 max-w-full border border-slate-800"
+              onError={(e) => {
+                const localSrc = `/${(item.screenshot || '').replace(/^\//, '')}`;
+                if (!e.currentTarget.src.endsWith(localSrc)) {
+                  e.currentTarget.src = localSrc;
+                }
+              }}
             />
           ) : (
             <div className="text-center py-20 text-slate-500">

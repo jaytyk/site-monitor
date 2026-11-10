@@ -1,21 +1,29 @@
+# ==============================================================================
+# Site Monitor GitHub Actions 워크플로 설정 파일
+# 사용법: 
+# 1. GitHub 저장소(jaytyk/site-monitor)로 이동
+# 2. .github/workflows/monitor.yml 파일을 열고 (또는 새로 생성)
+# 3. 아래 내용 전체를 복사하여 붙여넣고 Commit 변경사항을 저장하세요.
+# ==============================================================================
+
 name: Site Monitor
 
 on:
-  # ✅ GitHub Actions 화면에서 "Run workflow"로 즉시 1회 실행 가능
+  # ✅ GitHub Actions 화면에서 "Run workflow"로 즉시 1회 수동 실행 가능
   workflow_dispatch:
 
   # ✅ 정기 실행 스케줄 (GitHub Actions cron은 UTC 기준)
+  # - 매월 1일 09:00(UTC) = 한국 시간(KST) 매월 1일 18:00
   schedule:
-    # - cron: "0 * * * *"   # 매시간 정각(UTC)
-    # - cron: "*/10 * * * *"  # 10분마다
-    # - cron: "0 9 * * 1"     # 매주 월요일 09:00(UTC) = KST 18:00
-    - cron: "0 9 1 * *"     # 매월 1일 09:00(UTC) = KST 18:00, 월 1회 실행
+    - cron: "0 9 1 * *"
 
-# ✅ GITHUB_TOKEN으로 reports/ 커밋/푸시해야 하므로 write 필요
+# ✅ reports/ 커밋 및 GitHub Pages 자동 배포 권한
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
-# ✅ 동시에 여러 실행이 겹치지 않게 그룹으로 묶음(중복 실행 방지)
+# ✅ 중복 실행 방지
 concurrency:
   group: site-monitor
   cancel-in-progress: false
@@ -34,17 +42,15 @@ jobs:
         with:
           node-version: "20"
 
-      # 3) 의존성 설치 (package.json 기반)
+      # 3) 의존성 설치
       - name: Install deps
         run: npm install
 
-      # 4) Playwright 브라우저 설치(Chromium) + 런너에 필요한 deps 설치
+      # 4) Playwright 브라우저(Chromium) 설치
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
-      # 5) 모니터 실행
-      #    - 실패(exit code != 0)하더라도 워크플로를 바로 중단하지 않고
-      #      exit_code 값을 outputs로 남긴 뒤 계속 진행(커밋/알림 위해)
+      # 5) 모니터 크롤링 실행 (14개 사이트 점검 및 reports/ 생성)
       - name: Run monitor (do not stop on failure)
         id: monitor
         run: |
@@ -54,19 +60,14 @@ jobs:
           echo "exit_code=$code" >> $GITHUB_OUTPUT
           exit 0
 
-      # 6) 결과(reports/)를 리포에 커밋/푸시 (항상 실행)
+      # 6) 최신 검사 결과(reports/)를 리포지토리에 커밋 & 푸시
       - name: Commit reports (always)
         if: always()
         run: |
-          # Jekyll 비활성화(정적 파일/폴더 그대로 서빙)
           touch .nojekyll
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # ✅ .gitignore에 걸려도 reports/를 강제로 스테이징
-          git add -f -A reports .nojekyll
-
+          git add -f -A reports assets .nojekyll
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m "chore(reports): add run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push
@@ -74,10 +75,29 @@ jobs:
             echo "No changes to commit."
           fi
 
-      # 7) Slack 알림 (요약 + 대시보드 링크)
-      #    - Slack Webhook은 절대 파일에 하드코딩하지 말고
-      #      GitHub Secret(SLACK_WEBHOOK_URL)로만 넣어야 안전합니다.
-      #    - Secret이 없으면 조용히 스킵(워크플로 실패 안 함)
+      # 7) 대시보드 빌드 (Vite React 컴파일 및 dist 준비)
+      - name: Build Dashboard for GitHub Pages
+        if: always()
+        run: |
+          npm run build
+          # 최신 reports 폴더를 dist 안에도 포함하여 함께 서빙
+          cp -r reports dist/
+          touch dist/.nojekyll
+
+      # 8) GitHub Pages 자동 배포 (Settings > Pages > Source가 GitHub Actions일 때 자동 배포)
+      - name: Upload Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      # 9) Slack 알림 (요약 + 대시보드 링크) - Webhook이 등록되어 있을 때만 동작
       - name: Notify Slack (summary + dashboard link)
         if: always()
         env:
@@ -96,7 +116,6 @@ jobs:
           const runRef = idx.runs[0];
           const run = JSON.parse(fs.readFileSync(runRef.runJson,'utf8'));
 
-          // Pages 대시보드 링크 자동 생성: https://{owner}.github.io/{repo}/#run=...
           const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
           const pagesBase = `https://${owner}.github.io/${repo}/`;
           const dash = `${pagesBase}#run=${encodeURIComponent(run.id)}`;
@@ -110,7 +129,6 @@ jobs:
           const header = ok ? '✅ Site Monitor 결과 (이상없음)' : '⚠️ Site Monitor 결과 (실패 있음)';
           const statusLine = ok ? `전체 ${run.total}개 OK` : `${failedItems.length}/${run.total} FAIL`;
 
-          // Slack Block Kit payload
           const payload = {
             text: `${header} - ${statusLine}\n${dash}`,
             blocks: [
@@ -125,7 +143,6 @@ jobs:
             ]
           };
 
-          // 실패가 있으면 실패 목록(최대 10개) 추가
           if (!ok) {
             payload.blocks.push({
               type:'section',
@@ -136,10 +153,10 @@ jobs:
           fs.writeFileSync('slack_payload.json', JSON.stringify(payload));
           NODE
 
-       # curl -X POST -H 'Content-type: application/json' --data @slack_payload.json "$SLACK_WEBHOOK_URL"
+          # 슬랙 발송 활성화 시 아래 주석을 해제하세요:
+          # curl -X POST -H 'Content-type: application/json' --data @slack_payload.json "$SLACK_WEBHOOK_URL"
 
-      # 8) (선택) 모니터가 실패한 경우 Actions를 빨갛게(실패) 표시
-      #    - 실패해도 "커밋/슬랙 알림"은 이미 실행되도록 위에서 처리함
+      # 10) (선택) 모니터가 실패한 경우 Actions를 실패(빨간색)로 표시
       - name: Fail workflow if monitor failed
         if: ${{ steps.monitor.outputs.exit_code != '0' }}
         run: exit 1

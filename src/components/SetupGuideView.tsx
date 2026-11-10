@@ -29,7 +29,9 @@ on:
     - cron: "0 9 1 * *" # 매월 1일 09:00(UTC) = KST 18:00 정기 실행
 
 permissions:
-  contents: write # ✅ reports/ 폴더를 커밋/푸시하기 위해 필수!
+  contents: write # ✅ reports/ 폴더를 커밋/푸시하기 위해 필수
+  pages: write    # ✅ GitHub Pages 자동 배포 권한
+  id-token: write # ✅ GitHub OIDC 권한
 
 concurrency:
   group: site-monitor
@@ -63,13 +65,34 @@ jobs:
           touch .nojekyll
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f -A reports .nojekyll
+          git add -f -A reports assets .nojekyll
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m "chore(reports): add run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push
           else
             echo "No changes to commit."
           fi
+
+      # ✅ Vite 대시보드 빌드 & GitHub Pages 자동 배포
+      - name: Build Dashboard for GitHub Pages
+        if: always()
+        run: |
+          npm run build
+          cp -r reports dist/
+          touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
       - name: Notify Slack
         if: always()
         env:
@@ -153,20 +176,20 @@ jobs:
               <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 text-xs font-bold flex items-center justify-center">
                 2
               </span>
-              <h3 className="text-sm font-bold text-white">GitHub Pages 배포 설정</h3>
+              <h3 className="text-sm font-bold text-white">GitHub Pages 배포 방식 설정 (404 해결 ⭐)</h3>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              배포 확인
+              필수 설정
             </span>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            대시보드가 <code className="text-indigo-300 font-mono">https://jaytyk.github.io/site-monitor/</code>로 서빙되도록 GitHub Pages 브랜치가 지정되어 있어야 합니다.
+            Vite React 대시보드가 정상 빌드되어 서빙되도록 GitHub Pages 소스를 <strong className="text-emerald-400">GitHub Actions</strong>로 지정해야 합니다.
           </p>
-          <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1 font-mono text-[11px]">
+          <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1.5 font-mono text-[11px]">
             <div>1. 저장소 &gt; <strong className="text-slate-200">Settings &gt; Pages</strong> 이동</div>
-            <div>2. Build and deployment &gt; Source: <strong className="text-slate-200">Deploy from a branch</strong></div>
-            <div>3. Branch: <strong className="text-emerald-400">main</strong> / Folder: <strong className="text-emerald-400">/(root)</strong></div>
-            <div>4. 루트에 <code className="text-indigo-300 font-bold">.nojekyll</code> 파일이 유지되어야 합니다.</div>
+            <div>2. Build and deployment &gt; Source 드롭다운 클릭</div>
+            <div>3. <span className="text-emerald-400 font-bold">● GitHub Actions</span> 선택!</div>
+            <div className="text-[10px] text-indigo-300">* 이제 Actions 워크플로가 돌 때마다 정적 번들(dist)이 자동 배포됩니다.</div>
           </div>
         </div>
 
@@ -267,13 +290,18 @@ jobs:
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-base font-bold text-white">
-              GitHub Actions 워크플로 소스 (.github/workflows/monitor.yml)
-            </h3>
+            <div>
+              <h3 className="text-base font-bold text-white">
+                GitHub Actions 워크플로 소스 (monitor-workflow.txt)
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                GitHub 보안 정책상 AI Studio에서 워크플로를 직접 푸시할 수 없으므로, 아래 내용을 복사하여 GitHub 웹의 <code className="text-indigo-300">.github/workflows/monitor.yml</code>에 붙여넣으시면 됩니다.
+              </p>
+            </div>
           </div>
           <button
             onClick={() => copyText(workflowYaml, 'yaml')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition shrink-0"
           >
             {copiedSection === 'yaml' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             <span>{copiedSection === 'yaml' ? '복사됨!' : 'YAML 복사'}</span>

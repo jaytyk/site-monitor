@@ -41,56 +41,90 @@ export default function App() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // 1. Load run index from either local or live
+  // 1. Load run index from server API with automatic live/local fallback
   const loadIndex = useCallback(async (source: 'local' | 'live' = dataSource) => {
     try {
-      const url = source === 'local' 
-        ? `/reports/index.json?v=${Date.now()}`
-        : `https://jaytyk.github.io/site-monitor/reports/index.json?v=${Date.now()}`;
-      
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: RunIndex = await res.json();
-      const runList = data.runs || [];
-      setRuns(runList);
+      const res = await fetch(`/api/reports-data/index?source=${source}&v=${Date.now()}`);
+      if (res.ok) {
+        const payload = await res.json();
+        const runList: RunIndexItem[] = payload.data?.runs || [];
+        setRuns(runList);
 
-      if (runList.length > 0) {
-        // preserve current selection or select the latest
-        setSelectedRunId(prev => (prev && runList.some(r => r.id === prev) ? prev : runList[0].id));
+        if (payload.fallback && source === 'live') {
+          showNotice('GitHub Pages에 아직 결과가 배포되지 않아 로컬 리포트를 표시합니다.');
+        }
+
+        if (runList.length > 0) {
+          setSelectedRunId(prev => (prev && runList.some(r => r.id === prev) ? prev : runList[0].id));
+        }
+        return runList;
       }
-      return runList;
-    } catch (err: any) {
-      console.warn('Failed to load index from', source, err);
-      if (source === 'live') {
-        showNotice('GitHub Pages 라이브 데이터 로딩 실패: 로컬 데이터로 전환합니다.');
-        setDataSource('local');
-      }
-      return [];
+    } catch (err) {
+      console.warn('API reports-data/index fetch failed, trying static /reports/index.json', err);
     }
+
+    // Direct static fallback
+    try {
+      const res = await fetch(`/reports/index.json?v=${Date.now()}`);
+      if (res.ok) {
+        const data: RunIndex = await res.json();
+        const runList = data.runs || [];
+        setRuns(runList);
+        if (runList.length > 0) {
+          setSelectedRunId(prev => (prev && runList.some(r => r.id === prev) ? prev : runList[0].id));
+        }
+        return runList;
+      }
+    } catch (err) {
+      console.error('Failed to load local index', err);
+    }
+    return [];
   }, [dataSource]);
 
-  // 2. Load run detail
+  // 2. Load run detail with graceful fallback
   const loadRunDetail = useCallback(async (runId: string, runList: RunIndexItem[], source: 'local' | 'live' = dataSource) => {
     const target = runList.find(r => r.id === runId);
     if (!target) return;
 
     setIsLoadingRun(true);
     try {
-      const runJsonPath = target.runJson.replace(/^\//, '');
-      const url = source === 'local'
-        ? `/${runJsonPath}?v=${Date.now()}`
-        : `https://jaytyk.github.io/site-monitor/${runJsonPath}?v=${Date.now()}`;
-
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: RunDetail = await res.json();
-      setSelectedRun(data);
-    } catch (err: any) {
-      console.error('Failed to load run detail:', err);
-      showNotice(`실행(${runId}) 데이터 로드 실패: ${err.message}`);
-    } finally {
-      setIsLoadingRun(false);
+      // 1) Try server API
+      const res = await fetch(`/api/reports-data/run/${encodeURIComponent(runId)}?source=${source}&v=${Date.now()}`);
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.data) {
+          setSelectedRun(payload.data);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Server run detail route failed, falling back to static file', err);
     }
+
+    // 2) Direct static fallback to /reports/{runId}/run.json
+    try {
+      const cleanPath = target.runJson.replace(/^\//, '');
+      const res = await fetch(`/${cleanPath}?v=${Date.now()}`);
+      if (res.ok) {
+        const data: RunDetail = await res.json();
+        setSelectedRun(data);
+        return;
+      }
+    } catch (err) {
+      console.warn('Direct static fetch failed', err);
+    }
+
+    // 3) Graceful summary fallback if detail file is absent
+    setSelectedRun({
+      id: target.id,
+      overall: target.overall,
+      total: target.total,
+      failed: target.failed,
+      startedAt: target.startedAt,
+      finishedAt: target.finishedAt,
+      durationMs: target.durationMs,
+      items: []
+    });
   }, [dataSource]);
 
   // 3. Load sites config from server

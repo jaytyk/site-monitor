@@ -364,6 +364,12 @@ export const DashboardView: React.FC<Props> = ({
                                 alt={item.name}
                                 className="w-20 h-12 object-cover object-top transition duration-200 group-hover:scale-105"
                                 loading="lazy"
+                                onError={(e) => {
+                                  const localSrc = `/${(item.screenshot || '').replace(/^\//, '')}`;
+                                  if (!e.currentTarget.src.endsWith(localSrc)) {
+                                    e.currentTarget.src = localSrc;
+                                  }
+                                }}
                               />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
                                 <Maximize2 className="w-3.5 h-3.5 text-white" />
@@ -448,6 +454,12 @@ export const DashboardView: React.FC<Props> = ({
                           alt={item.name}
                           className="w-full h-full object-cover object-top transition duration-300 group-hover:scale-105"
                           loading="lazy"
+                          onError={(e) => {
+                            const localSrc = `/${(item.screenshot || '').replace(/^\//, '')}`;
+                            if (!e.currentTarget.src.endsWith(localSrc)) {
+                              e.currentTarget.src = localSrc;
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition gap-2 text-xs text-white font-medium">
                           <Maximize2 className="w-4 h-4" />

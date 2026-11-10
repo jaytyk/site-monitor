@@ -174,6 +174,53 @@ app.get('/api/github-sync', async (_req, res) => {
   }
 });
 
+// 6. Get report index (local with optional live fetch & graceful fallback)
+app.get('/api/reports-data/index', async (req, res) => {
+  const source = req.query.source === 'live' ? 'live' : 'local';
+  if (source === 'live') {
+    try {
+      const liveRes = await fetch('https://jaytyk.github.io/site-monitor/reports/index.json?v=' + Date.now(), { cache: 'no-store' });
+      if (liveRes.ok) {
+        const liveData = await liveRes.json();
+        return res.json({ source: 'live', fallback: false, data: liveData });
+      }
+    } catch {
+      // Ignore network failure and fall back to local
+    }
+  }
+  const indexPath = path.join(REPORTS_DIR, 'index.json');
+  const localData = await readJson(indexPath, { runs: [] });
+  res.json({ source: 'local', fallback: source === 'live', data: localData });
+});
+
+// 7. Get run detail (local with optional live fetch & graceful fallback)
+app.get('/api/reports-data/run/:runId', async (req, res) => {
+  const { runId } = req.params;
+  const source = req.query.source === 'live' ? 'live' : 'local';
+  const safeRunId = path.basename(runId);
+
+  if (source === 'live') {
+    try {
+      const liveUrl = `https://jaytyk.github.io/site-monitor/reports/${encodeURIComponent(safeRunId)}/run.json?v=${Date.now()}`;
+      const liveRes = await fetch(liveUrl, { cache: 'no-store' });
+      if (liveRes.ok) {
+        const liveRun = await liveRes.json();
+        return res.json({ source: 'live', fallback: false, data: liveRun });
+      }
+    } catch {
+      // Fallback to local
+    }
+  }
+
+  const runPath = path.join(REPORTS_DIR, safeRunId, 'run.json');
+  const localRun = await readJson(runPath, null);
+  if (localRun) {
+    return res.json({ source: 'local', fallback: source === 'live', data: localRun });
+  }
+
+  res.status(404).json({ error: `Run ${safeRunId} not found` });
+});
+
 // Static files for reports & assets
 app.use('/reports', express.static(REPORTS_DIR));
 app.use('/assets', express.static(path.join(ROOT, 'public', 'assets')));
